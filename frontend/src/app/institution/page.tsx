@@ -14,81 +14,100 @@ export default function InstitutionDashboard() {
   }, []);
 
   if (!analytics) {
-    return <div className="p-8 text-center text-slate-500 animate-pulse">Loading Analytics Data...</div>;
+    return <div className="p-12 text-center text-neu-muted font-bold animate-pulse text-lg">Loading Analytics Data...</div>;
   }
 
-  const funnelData = [
-    { name: "Total Applications", value: analytics.funnel.applied },
-    { name: "Shortlisted", value: analytics.funnel.shortlisted },
-    { name: "Hired", value: analytics.funnel.hired },
-  ];
-
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-neu-bg p-8">
+      <div className="max-w-7xl mx-auto space-y-12">
         
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Institution Analytics</h1>
-          <p className="text-slate-500">Monitor student placement readiness and industry skill demands.</p>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-neu-fg">Institution Analytics</h1>
+            <p className="text-lg text-neu-muted mt-2 font-medium">Monitor student placement readiness and industry skill demands.</p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Total Applications</CardDescription>
-              <CardTitle className="text-4xl">{analytics.funnel.applied}</CardTitle>
+        {/* Funnel Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <Card className="flex flex-col items-center text-center p-6">
+            <CardHeader className="pb-4 items-center">
+              <div className="w-16 h-16 rounded-full shadow-neu-inset-deep flex items-center justify-center mb-2">
+                 <div className="w-8 h-8 rounded-full shadow-neu-extruded bg-neu-fg" />
+              </div>
+              <CardDescription className="text-lg uppercase tracking-wider font-bold">Total Applications</CardDescription>
             </CardHeader>
+            <CardContent>
+              <div className="text-6xl font-black text-neu-fg">{analytics.funnel.applied}</div>
+            </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Candidates Shortlisted</CardDescription>
-              <CardTitle className="text-4xl text-blue-600">{analytics.funnel.shortlisted}</CardTitle>
+          
+          <Card className="flex flex-col items-center text-center p-6">
+            <CardHeader className="pb-4 items-center">
+              <div className="w-16 h-16 rounded-full shadow-neu-inset-deep flex items-center justify-center mb-2">
+                 <div className="w-8 h-8 rounded-full shadow-neu-extruded bg-blue-500" />
+              </div>
+              <CardDescription className="text-lg uppercase tracking-wider font-bold">Shortlisted</CardDescription>
             </CardHeader>
+            <CardContent>
+              <div className="text-6xl font-black text-blue-500">{analytics.funnel.shortlisted}</div>
+            </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Final Placements</CardDescription>
-              <CardTitle className="text-4xl text-green-600">{analytics.funnel.hired}</CardTitle>
+
+          <Card className="flex flex-col items-center text-center p-6">
+            <CardHeader className="pb-4 items-center">
+              <div className="w-16 h-16 rounded-full shadow-neu-inset-deep flex items-center justify-center mb-2">
+                 <div className="w-8 h-8 rounded-full shadow-neu-extruded bg-neu-success" />
+              </div>
+              <CardDescription className="text-lg uppercase tracking-wider font-bold">Final Placements</CardDescription>
             </CardHeader>
+            <CardContent>
+              <div className="text-6xl font-black text-neu-success">{analytics.funnel.hired}</div>
+            </CardContent>
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <Card className="col-span-1">
-            <CardHeader>
-              <CardTitle>Skill Demand Trends</CardTitle>
-              <CardDescription>Most requested competencies by industry recruiters this quarter</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[300px]">
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          
+          <div className="p-8 shadow-neu-inset rounded-[40px] flex flex-col">
+            <div className="mb-8 px-4">
+              <h2 className="text-2xl font-bold text-neu-fg">Skill Demand Trends</h2>
+              <p className="text-neu-muted font-medium mt-1">Most requested competencies by industry recruiters this quarter</p>
+            </div>
+            
+            <div className="flex-1 min-h-[350px] shadow-neu-extruded rounded-[32px] p-6 bg-neu-bg">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analytics.skills} layout="vertical" margin={{ left: 40 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                <BarChart data={analytics.skills} layout="vertical" margin={{ top: 20, right: 30, left: 40, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#a3b1c6" opacity={0.3} />
                   <XAxis type="number" hide />
-                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} />
-                  <Tooltip cursor={{fill: '#f1f5f9'}} />
-                  <Bar dataKey="demand" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={24} />
+                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{fill: '#3D4852', fontWeight: 600}} />
+                  <Tooltip cursor={{fill: 'rgba(163,177,198,0.1)'}} contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '9px 9px 16px rgba(163, 177, 198, 0.6)', backgroundColor: '#E0E5EC', color: '#3D4852', fontWeight: 'bold'}} />
+                  <Bar dataKey="demand" fill="#6C63FF" radius={[0, 8, 8, 0]} barSize={20} />
                 </BarChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card className="col-span-1">
-            <CardHeader>
-              <CardTitle>Cohort Placement Readiness</CardTitle>
-              <CardDescription>Average matching score index across graduating classes</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[300px]">
+          <div className="p-8 shadow-neu-inset rounded-[40px] flex flex-col">
+            <div className="mb-8 px-4">
+              <h2 className="text-2xl font-bold text-neu-fg">Cohort Placement Readiness</h2>
+              <p className="text-neu-muted font-medium mt-1">Average matching score index across graduating classes</p>
+            </div>
+            
+            <div className="flex-1 min-h-[350px] shadow-neu-extruded rounded-[32px] p-6 bg-neu-bg">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={analytics.readiness} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="cohort" axisLine={false} tickLine={false} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} dx={-10} domain={[0, 100]} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="score" stroke="#10b981" strokeWidth={3} dot={{r: 6}} activeDot={{r: 8}} />
+                <LineChart data={analytics.readiness} margin={{ top: 30, right: 30, left: 0, bottom: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#a3b1c6" opacity={0.3} />
+                  <XAxis dataKey="cohort" axisLine={false} tickLine={false} dy={15} tick={{fill: '#3D4852', fontWeight: 600}} />
+                  <YAxis axisLine={false} tickLine={false} dx={-10} domain={[0, 100]} tick={{fill: '#3D4852', fontWeight: 600}} />
+                  <Tooltip contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '9px 9px 16px rgba(163, 177, 198, 0.6)', backgroundColor: '#E0E5EC', color: '#3D4852', fontWeight: 'bold'}} />
+                  <Line type="monotone" dataKey="score" stroke="#38B2AC" strokeWidth={4} dot={{r: 8, fill: '#E0E5EC', strokeWidth: 3}} activeDot={{r: 10, fill: '#38B2AC'}} />
                 </LineChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+          
         </div>
       </div>
     </div>

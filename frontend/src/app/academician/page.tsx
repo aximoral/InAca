@@ -10,6 +10,12 @@ export default function AcademicianDashboard() {
   const [selectedAcad, setSelectedAcad] = useState<string>("");
   const [projects, setProjects] = useState<any[]>([]);
 
+  const handleLogout = () => {
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("role");
+    window.location.href = "/";
+  };
+
   useEffect(() => {
     fetch("http://localhost:8000/api/users/academicians")
       .then((res) => res.json())
@@ -34,17 +40,20 @@ export default function AcademicianDashboard() {
             <p className="text-lg text-neu-muted mt-2 font-medium">Discover FDPs, consult on live projects, and endorse student skills.</p>
           </div>
           
-          <div className="shadow-neu-inset-deep rounded-2xl p-3 flex items-center bg-neu-bg">
-            <span className="text-xs text-neu-muted mr-3 uppercase font-bold tracking-wider">Demo User:</span>
-            <select 
-              className="text-sm border-none bg-transparent outline-none cursor-pointer font-bold text-neu-fg appearance-none pr-4"
-              value={selectedAcad}
-              onChange={(e) => setSelectedAcad(e.target.value)}
-            >
-              {academicians.map(a => (
-                <option key={a.id} value={a.id}>{a.name}</option>
-              ))}
-            </select>
+          <div className="flex items-center gap-4">
+            <div className="shadow-neu-inset-deep rounded-2xl p-3 flex items-center bg-neu-bg">
+              <span className="text-xs text-neu-muted mr-3 uppercase font-bold tracking-wider">Demo User:</span>
+              <select 
+                className="text-sm border-none bg-transparent outline-none cursor-pointer font-bold text-neu-fg appearance-none pr-4"
+                value={selectedAcad}
+                onChange={(e) => setSelectedAcad(e.target.value)}
+              >
+                {academicians.map(a => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
+                ))}
+              </select>
+            </div>
+            <Button variant="outline" onClick={handleLogout} className="shadow-neu-extruded hover:shadow-neu-hover hover:-translate-y-1">Logout</Button>
           </div>
         </div>
 

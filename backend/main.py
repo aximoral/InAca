@@ -8,6 +8,21 @@ from database import engine, Base, get_db
 import models
 
 try:
+    from sentence_transformers import SentenceTransformer
+    print("Loading ML Embedding Model...")
+    embedding_model = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
+    print("Model loaded successfully.")
+except Exception as e:
+    print("Failed to load sentence-transformers. Using fallback embeddings. Error:", e)
+    embedding_model = None
+
+def get_embedding(text: str) -> list[float]:
+    if embedding_model:
+        return embedding_model.encode(text).tolist()
+    import random
+    return [random.uniform(-1, 1) for _ in range(384)]
+
+try:
     Base.metadata.create_all(bind=engine)
 except Exception as e:
     print(f"Warning: could not initialize database on startup. Ensure PG is running and vector extension is enabled. {e}")
@@ -27,6 +42,12 @@ app.add_middleware(
 def read_root():
     return {"message": "Antigravity 2.0 API is running."}
 
+def scale_match_score(raw_score: float) -> float:
+    # Scale the score assuming 0.3 is the floor and 0.75 is the ceiling
+    scaled = (raw_score - 0.3) / (0.75 - 0.3)
+    # Clamp the result between 0.0 and 1.0
+    return max(0.0, min(1.0, scaled))
+
 @app.get("/api/jobs/{job_id}/matches")
 def get_job_matches(job_id: uuid.UUID, db: Session = Depends(get_db)):
     job = db.query(models.Job).filter(models.Job.id == job_id).first()
@@ -45,14 +66,40 @@ def get_job_matches(job_id: uuid.UUID, db: Session = Depends(get_db)):
     embedding_str = str(list(job.embedding))
     results = db.execute(query, {"job_embedding": embedding_str}).fetchall()
     
-    matches = [{"user_id": r[0], "first_name": r[1], "last_name": r[2], "bio": r[3], "match_score": float(r[4])} for r in results]
+    matches = [{"user_id": r[0], "first_name": r[1], "last_name": r[2], "bio": r[3], "match_score": scale_match_score(float(r[4]))} for r in results]
     return {"job_id": job_id, "matches": matches}
+
+@app.get("/api/jobs/{job_id}/applicants")
+def get_job_applicants(job_id: uuid.UUID, db: Session = Depends(get_db)):
+    query = text("""
+        SELECT p.user_id, p.first_name, p.last_name, p.bio, a.status
+        FROM applications a
+        JOIN profiles p ON a.student_id = p.user_id
+        WHERE a.job_id = :job_id
+        ORDER BY a.applied_at DESC
+    """)
+    results = db.execute(query, {"job_id": str(job_id)}).fetchall()
+    
+    return [
+        {
+            "user_id": str(r[0]),
+            "first_name": r[1],
+            "last_name": r[2],
+            "bio": r[3],
+            "status": r[4]
+        }
+        for r in results
+    ]
 
 @app.get("/api/students/{user_id}/matches")
 def get_student_matches(user_id: uuid.UUID, db: Session = Depends(get_db)):
     student_profile = db.query(models.Profile).filter(models.Profile.user_id == user_id).first()
     if not student_profile or student_profile.embedding is None:
         raise HTTPException(status_code=404, detail="Profile not found or no embedding")
+
+    # Fetch student skills
+    student_skills_query = db.query(models.Skill.name).join(models.UserSkill).filter(models.UserSkill.user_id == user_id).all()
+    student_skill_names = {s[0] for s in student_skills_query}
 
     query = text("""
         SELECT j.id, j.title, j.description, p.organization_name as company,
@@ -67,7 +114,25 @@ def get_student_matches(user_id: uuid.UUID, db: Session = Depends(get_db)):
     embedding_str = str(list(student_profile.embedding))
     results = db.execute(query, {"student_embedding": embedding_str}).fetchall()
     
-    matches = [{"job_id": r[0], "title": r[1], "description": r[2], "company": r[3], "match_score": float(r[4])} for r in results]
+    matches = []
+    for r in results:
+        job_id = r[0]
+        # Fetch job skills
+        job_skills_query = db.query(models.Skill.name).join(models.JobSkill).filter(models.JobSkill.job_id == job_id).all()
+        job_skill_names = {s[0] for s in job_skills_query}
+        
+        # Calculate missing skills
+        missing = list(job_skill_names - student_skill_names)
+        
+        matches.append({
+            "job_id": job_id,
+            "title": r[1],
+            "description": r[2],
+            "company": r[3],
+            "match_score": scale_match_score(float(r[4])),
+            "missing_skills": missing
+        })
+        
     return {"student_id": user_id, "job_matches": matches}
 
 @app.get("/api/profiles/{user_id}")
@@ -146,6 +211,8 @@ def get_institution_analytics(db: Session = Depends(get_db)):
 from pydantic import BaseModel
 
 class ProfileUpdateRequest(BaseModel):
+    first_name: str
+    last_name: str
     bio: str
     skills: List[str]
 
@@ -164,6 +231,12 @@ def update_profile(user_id: uuid.UUID, req: ProfileUpdateRequest, db: Session = 
         raise HTTPException(status_code=404, detail="Profile not found")
     
     profile.bio = req.bio
+    profile.first_name = req.first_name
+    profile.last_name = req.last_name
+    
+    # Generate Semantic Vector Embedding
+    combined_text = f"{req.bio}. Skills: {', '.join(req.skills)}"
+    profile.embedding = get_embedding(combined_text)
     
     # Update skills
     # First, clear existing
@@ -181,7 +254,8 @@ def update_profile(user_id: uuid.UUID, req: ProfileUpdateRequest, db: Session = 
         db.add(user_skill)
         
     db.commit()
-    return {"status": "success"}
+    db.refresh(profile)
+    return profile
 
 @app.post("/api/applications")
 def apply_for_job(req: ApplicationRequest, db: Session = Depends(get_db)):
@@ -221,6 +295,7 @@ def enroll_in_course(req: EnrollmentRequest, db: Session = Depends(get_db)):
 @app.get("/api/students/{user_id}/skills")
 def get_student_skills(user_id: uuid.UUID, db: Session = Depends(get_db)):
     skills = db.query(models.Skill).join(models.UserSkill).filter(models.UserSkill.user_id == user_id).all()
+    return [skill.name for skill in skills]
 class SignupRequest(BaseModel):
     email: str
     password: str

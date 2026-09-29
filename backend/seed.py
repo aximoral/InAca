@@ -3,11 +3,9 @@ import uuid
 from faker import Faker
 from database import SessionLocal
 import models
+from main import get_embedding
 
 fake = Faker()
-
-def generate_mock_embedding():
-    return [random.uniform(-1, 1) for _ in range(384)]
 
 def seed_data():
     db = SessionLocal()
@@ -20,7 +18,7 @@ def seed_data():
     db = SessionLocal()
 
     print("Creating core skills...")
-    skill_names = ["Python", "React", "Machine Learning", "Data Analysis", "Project Management", "UI/UX Design", "Cloud Computing", "Cybersecurity", "DevOps"]
+    skill_names = ["Python", "React", "Machine Learning", "Data Analysis", "Project Management", "UI/UX Design", "Cloud Computing", "Cybersecurity", "DevOps", "Node.js", "Docker", "SQL", "PostgreSQL", "HTML", "CSS", "TypeScript", "R", "AWS", "Kubernetes", "Terraform"]
     skills = []
     for name in skill_names:
         skill = models.Skill(name=name, category="Technical")
@@ -41,7 +39,7 @@ def seed_data():
         u = models.User(email=email, password="password123", role=role)
         db.add(u)
         db.commit()
-        db.add(models.Profile(user_id=u.id, first_name=fname, last_name=lname, bio=bio, organization_name="SkillSync Demo", embedding=generate_mock_embedding()))
+        db.add(models.Profile(user_id=u.id, first_name=fname, last_name=lname, bio=bio, organization_name="SkillSync Demo", embedding=get_embedding(bio)))
         demo_users[role] = u
     db.commit()
 
@@ -51,47 +49,54 @@ def seed_data():
         inst = models.User(email=fake.email(), role=models.RoleEnum.INSTITUTION)
         db.add(inst)
         db.commit()
-        db.add(models.Profile(user_id=inst.id, first_name=fake.company(), last_name="University", organization_name=fake.company() + " University", embedding=generate_mock_embedding()))
+        db.add(models.Profile(user_id=inst.id, first_name=fake.company(), last_name="University", organization_name=fake.company() + " University", embedding=get_embedding("Higher Education Institution")))
     
     # Academicians
     for i in range(5):
         acad = models.User(email=fake.email(), role=models.RoleEnum.ACADEMICIAN)
         db.add(acad)
         db.commit()
-        db.add(models.Profile(user_id=acad.id, first_name=fake.first_name(), last_name=fake.last_name(), organization_name="State University", bio="Professor of Computer Science", embedding=generate_mock_embedding()))
+        bio = "Professor of Computer Science specializing in AI."
+        db.add(models.Profile(user_id=acad.id, first_name=fake.first_name(), last_name=fake.last_name(), organization_name="State University", bio=bio, embedding=get_embedding(bio)))
     db.commit()
 
     print("Creating Recruiters and Jobs...")
-    recruiter = models.User(email="recruiter@techcorp.com", role=models.RoleEnum.RECRUITER)
-    db.add(recruiter)
-    db.commit()
-    
-    db.add(models.Profile(
-        user_id=recruiter.id,
-        first_name="Alice",
-        last_name="Smith",
-        organization_name="TechCorp Industries",
-        bio="Hiring the best tech talent.",
-        embedding=generate_mock_embedding()
-    ))
+    recruiter = demo_users[models.RoleEnum.RECRUITER]
+
+    # Replace Faker jobs with realistic ones for semantic matching
+    jobs_data = [
+        {"title": "Frontend Developer Intern", "desc": "Looking for a student skilled in React, HTML, CSS, and TypeScript to build beautiful user interfaces.", "req_skills": ["React", "HTML", "CSS", "TypeScript"]},
+        {"title": "Data Science Intern", "desc": "Requires knowledge of Python, R, Machine Learning, and Data Analysis.", "req_skills": ["Python", "R", "Machine Learning", "Data Analysis"]},
+        {"title": "Backend Engineering Intern", "desc": "Work with Node.js, Python, Docker, APIs, and databases like PostgreSQL.", "req_skills": ["Node.js", "Python", "Docker", "PostgreSQL"]},
+        {"title": "Full Stack Intern", "desc": "Must know both React and Node.js. Experience with APIs and databases is a plus.", "req_skills": ["React", "Node.js", "PostgreSQL", "HTML"]},
+        {"title": "Cloud DevOps Intern", "desc": "Help us scale our infrastructure using AWS, Kubernetes, Terraform, and CI/CD pipelines.", "req_skills": ["AWS", "Kubernetes", "Terraform", "Docker", "DevOps"]}
+    ]
 
     jobs = []
-    for _ in range(10):
+    for jd in jobs_data:
         j = models.Job(
             recruiter_id=recruiter.id,
-            title=fake.job(),
-            description=fake.catch_phrase(),
-            embedding=generate_mock_embedding()
+            title=jd["title"],
+            description=jd["desc"],
+            embedding=get_embedding(jd["title"] + " " + jd["desc"])
         )
         db.add(j)
+        db.commit() # Commit to get j.id
+        
+        # Attach hardcoded realistic skills to each job
+        assigned_skills = [s for s in skills if s.name in jd["req_skills"]]
+        for skill in assigned_skills:
+            db.add(models.JobSkill(job_id=j.id, skill_id=skill.id))
+        
         jobs.append(j)
     db.commit()
 
     print("Creating Live Projects & FDPs...")
     for _ in range(5):
+        desc = fake.text()
         p = models.Project(
             title="Industry Collab: " + fake.catch_phrase(),
-            description=fake.text(),
+            description=desc,
             type=random.choice([models.ProjectTypeEnum.LIVE_PROJECT, models.ProjectTypeEnum.FDP]),
             sponsor_id=recruiter.id
         )
@@ -139,7 +144,7 @@ def seed_data():
             provider=data["provider"],
             description=data["description"],
             url=data["url"],
-            embedding=generate_mock_embedding()
+            embedding=get_embedding(data["title"] + " " + data["description"])
         )
         db.add(c)
         courses.append(c)
@@ -153,13 +158,14 @@ def seed_data():
         db.commit()
         students.append(student)
         
+        bio = fake.catch_phrase()
         db.add(models.Profile(
             user_id=student.id,
             first_name=fake.first_name(),
             last_name=fake.last_name(),
             organization_name="State University",
-            bio=fake.catch_phrase(),
-            embedding=generate_mock_embedding()
+            bio=bio,
+            embedding=get_embedding(bio)
         ))
         
         # Add random skills
@@ -175,7 +181,32 @@ def seed_data():
             db.add(models.Enrollment(student_id=student.id, course_id=course.id, status="COMPLETED"))
 
     db.commit()
-    print("Seed data generated successfully! The DB is fully populated.")
+
+    # --- ENRICH DEMO STUDENT ---
+    print("Enriching Demo Student Profile...")
+    demo_student = demo_users[models.RoleEnum.STUDENT]
+    
+    # 1. Add specific skills
+    target_skills = ["React", "Python", "TypeScript"]
+    demo_skills = [s for s in skills if s.name in target_skills]
+    for ds in demo_skills:
+        db.add(models.UserSkill(user_id=demo_student.id, skill_id=ds.id, proficiency=5))
+    
+    # 2. Add applications to a couple jobs
+    if jobs:
+        for job in jobs[:2]:
+            db.add(models.Application(student_id=demo_student.id, job_id=job.id, status=models.ApplicationStatusEnum.PENDING))
+            
+    # 3. Regenerate embedding for the Demo Student incorporating their new skills
+    demo_profile = db.query(models.Profile).filter(models.Profile.user_id == demo_student.id).first()
+    if demo_profile:
+        skill_str = ", ".join(target_skills)
+        demo_profile.bio = f"A passionate learner specializing in {skill_str}."
+        demo_profile.embedding = get_embedding(demo_profile.bio)
+        
+    db.commit()
+
+    print("Seed data generated successfully! The DB is fully populated with ML embeddings.")
 
 if __name__ == "__main__":
     seed_data()

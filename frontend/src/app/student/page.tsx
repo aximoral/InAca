@@ -21,6 +21,7 @@ export default function StudentDashboard() {
   // Interactive States
   const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
   const [appliedJobs, setAppliedJobs] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState("matches");
 
   useEffect(() => {
     // Read from Auth state
@@ -102,7 +103,11 @@ export default function StudentDashboard() {
           </div>
           
           <div className="flex items-center gap-4">
-            <Button variant="default" onClick={() => window.location.href='/onboarding'}>Complete Profile ✨</Button>
+            {profile?.first_name ? (
+              <Button variant="default" onClick={() => window.location.href='/profile'}>My Profile 👤</Button>
+            ) : (
+              <Button variant="default" onClick={() => window.location.href='/onboarding'}>Complete Profile ✨</Button>
+            )}
             <Button variant="outline" onClick={handleLogout} className="shadow-neu-extruded hover:shadow-neu-hover hover:-translate-y-1">Logout</Button>
           </div>
         </div>
@@ -156,7 +161,7 @@ export default function StudentDashboard() {
 
             {/* Right Column: AI Job Matches */}
             <div className="lg:col-span-8">
-              <Tabs defaultValue="matches" className="w-full">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="mb-8 w-full flex overflow-x-auto justify-start md:justify-center p-3 h-auto">
                   <TabsTrigger value="matches" className="text-base">AI Recommended Internships</TabsTrigger>
                   <TabsTrigger value="learning" className="text-base">Learning Hub</TabsTrigger>
@@ -181,9 +186,25 @@ export default function StudentDashboard() {
                           </Badge>
                         </CardHeader>
                         <CardContent>
-                          <p className="text-base text-neu-muted line-clamp-2 mb-8 leading-relaxed">
+                          <p className="text-base text-neu-muted line-clamp-2 mb-6 leading-relaxed">
                             {job.description}
                           </p>
+
+                          {job.missing_skills && job.missing_skills.length > 0 && (
+                            <div className="mb-8 p-4 rounded-[20px] bg-red-500/5 border border-red-500/10 shadow-neu-inset-deep">
+                              <div className="flex justify-between items-center mb-3">
+                                <h4 className="text-sm font-bold text-red-500/80 uppercase tracking-wider">Skill Gap Identified</h4>
+                                <Button variant="ghost" size="sm" onClick={() => setActiveTab("learning")} className="h-6 text-xs font-bold text-neu-accent hover:text-neu-accent/80 p-0 hover:bg-transparent">Close the Gap ↗</Button>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {job.missing_skills.map((skill: string, i: number) => (
+                                  <Badge key={i} variant="outline" className="border-red-500/30 text-red-500/80 bg-red-500/5">
+                                    {skill}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                           <Button 
                             variant="default" 
                             size="lg"

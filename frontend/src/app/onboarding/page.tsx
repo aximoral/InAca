@@ -11,23 +11,31 @@ export default function OnboardingWizard() {
   const [step, setStep] = useState(1);
   const totalSteps = 4;
   
-  // Demo User State
-  const [demoUserId, setDemoUserId] = useState<string>("");
+  // Real User State
+  const [userId, setUserId] = useState<string>("");
 
   useEffect(() => {
-    // Fetch a demo student ID to simulate a logged-in user session
-    fetch("http://localhost:8000/api/users/students")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.length > 0) setDemoUserId(data[0].id);
-      })
-      .catch((err) => console.error("Error fetching demo user:", err));
-  }, []);
+    // Read from Auth state
+    const storedUserId = localStorage.getItem("user_id");
+    if (!storedUserId) {
+      router.push("/");
+    } else {
+      setUserId(storedUserId);
+    }
+  }, [router]);
   
   // Form State
-  const [headline, setHeadline] = useState("Full-Stack Developer passionate about AI");
-  const [skills, setSkills] = useState<string[]>(["Python", "React"]);
+  const [fullName, setFullName] = useState("");
+  const [headline, setHeadline] = useState("");
+  const [location, setLocation] = useState("");
+  
+  const [skills, setSkills] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
+  
+  const [jobTitle, setJobTitle] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [university, setUniversity] = useState("");
+  
   const [goal, setGoal] = useState<string>("job");
   
   // File Upload State
@@ -58,18 +66,61 @@ export default function OnboardingWizard() {
       setFileName(e.target.files[0].name);
     }
   };
+  
+  const handleAutoFill = (type: 'fullstack' | 'ai' | 'backend') => {
+    setFullName("First Last");
+    
+    if (type === 'fullstack') {
+      setHeadline("Full Stack Developer");
+      setLocation("Manchester, United Kingdom (Open to Remote)");
+      setSkills(["HTML5", "CSS3", "TypeScript", "Angular", "REST API", "GraphQL"]);
+      setJobTitle("Full Stack Developer at Resume Worded");
+      setStartDate("08/2021");
+      setGoal("job");
+    } else if (type === 'ai') {
+      setHeadline("Artificial Intelligence Specialist");
+      setLocation("Fayetteville, Arkansas");
+      setSkills(["Python", "R", "NLP", "Machine Learning", "Reinforcement Learning"]);
+      setJobTitle("Artificial Intelligence Specialist at Resume Worded");
+      setStartDate("09/2015");
+      setGoal("network");
+    } else if (type === 'backend') {
+      setHeadline("Backend Developer");
+      setLocation("Worcester, United Kingdom");
+      setSkills(["Node.js", "Kubernetes", "Docker", "MySQL", "Java", "C++"]);
+      setJobTitle("Backend Developer at Resume Worded");
+      setStartDate("08/2021");
+      setGoal("job");
+    }
+  };
 
   const handleComplete = async () => {
-    if (!demoUserId) return;
+    if (!userId) return;
     
     setIsSubmitting(true);
+    
+    // Auto-capture any pending skill input the user forgot to press 'Enter' on
+    const finalSkills = [...skills];
+    if (skillInput.trim() !== '' && !finalSkills.includes(skillInput.trim())) {
+      finalSkills.push(skillInput.trim());
+      setSkills(finalSkills);
+      setSkillInput("");
+    }
+
+    // Split name
+    const parts = fullName.trim().split(" ");
+    const firstName = parts[0] || "User";
+    const lastName = parts.slice(1).join(" ") || "";
+
     try {
-      const response = await fetch(`http://localhost:8000/api/profiles/${demoUserId}`, {
+      const response = await fetch(`http://localhost:8000/api/profiles/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          bio: headline,
-          skills: skills
+          first_name: firstName,
+          last_name: lastName,
+          bio: headline || "Passionate about making an impact.",
+          skills: finalSkills
         })
       });
 
@@ -91,6 +142,24 @@ export default function OnboardingWizard() {
   return (
     <div className="min-h-screen bg-neu-bg flex flex-col items-center justify-center p-4 md:p-8">
       
+      {/* Dev Tools Auto-Fill Section */}
+      <div className="w-full max-w-3xl mb-8 p-4 rounded-2xl border-2 border-dashed border-neu-muted/40 bg-neu-bg shadow-neu-extruded flex flex-col items-center gap-3">
+        <span className="text-[10px] font-extrabold text-neu-accent uppercase tracking-widest bg-neu-bg px-2 -mt-7 shadow-neu-inset-small rounded-full border border-neu-muted/20">
+          Developer Tools
+        </span>
+        <div className="flex flex-wrap gap-4 justify-center w-full">
+          <Button variant="outline" size="sm" onClick={() => handleAutoFill('fullstack')} className="text-xs border-dashed text-neu-muted hover:text-neu-fg">
+            ⚡ Auto-Fill: Full Stack
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => handleAutoFill('ai')} className="text-xs border-dashed text-neu-muted hover:text-neu-fg">
+            ⚡ Auto-Fill: AI Specialist
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => handleAutoFill('backend')} className="text-xs border-dashed text-neu-muted hover:text-neu-fg">
+            ⚡ Auto-Fill: Backend Dev
+          </Button>
+        </div>
+      </div>
+
       <div className="w-full max-w-3xl mb-8 flex flex-col items-center">
         <h1 className="text-3xl font-extrabold tracking-tight text-neu-fg mb-6">Complete Your Profile</h1>
         
@@ -134,7 +203,13 @@ export default function OnboardingWizard() {
                 <div className="w-full space-y-4">
                   <div>
                     <label className="block text-sm font-bold text-neu-fg mb-2 ml-2">Full Name</label>
-                    <input type="text" placeholder="e.g. Jane Doe" className={inputStyle} defaultValue="Harshvardhan D K" />
+                    <input 
+                      type="text" 
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="e.g. Jane Doe" 
+                      className={inputStyle} 
+                    />
                   </div>
                 </div>
               </div>
@@ -152,7 +227,13 @@ export default function OnboardingWizard() {
               
               <div>
                 <label className="block text-sm font-bold text-neu-fg mb-2 ml-2">Location / Remote Preference</label>
-                <input type="text" placeholder="e.g. San Francisco, CA (Open to Remote)" className={inputStyle} />
+                <input 
+                  type="text" 
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="e.g. San Francisco, CA (Open to Remote)" 
+                  className={inputStyle} 
+                />
               </div>
             </div>
           )}
@@ -219,12 +300,24 @@ export default function OnboardingWizard() {
                 <h3 className="font-bold text-lg text-neu-fg border-b border-transparent shadow-neu-inset-small pb-2 inline-block px-4 rounded-xl">Current Experience</h3>
                 <div>
                   <label className="block text-sm font-bold text-neu-muted mb-2 ml-2 mt-4">Job Title & Company</label>
-                  <input type="text" placeholder="Software Engineer at TechCorp" className={inputStyle} />
+                  <input 
+                    type="text" 
+                    value={jobTitle}
+                    onChange={(e) => setJobTitle(e.target.value)}
+                    placeholder="Software Engineer at TechCorp" 
+                    className={inputStyle} 
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-neu-muted mb-2 ml-2">Start Date</label>
-                    <input type="text" placeholder="MM/YYYY" className={inputStyle} />
+                    <input 
+                      type="text" 
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      placeholder="MM/YYYY" 
+                      className={inputStyle} 
+                    />
                   </div>
                   <div className="flex items-center gap-3 mt-8">
                      <input type="checkbox" className="w-5 h-5 rounded shadow-neu-inset accent-neu-accent" defaultChecked />
@@ -237,7 +330,13 @@ export default function OnboardingWizard() {
                 <h3 className="font-bold text-lg text-neu-fg border-b border-transparent shadow-neu-inset-small pb-2 inline-block px-4 rounded-xl">Education</h3>
                 <div>
                   <label className="block text-sm font-bold text-neu-muted mb-2 ml-2 mt-4">University & Degree</label>
-                  <input type="text" placeholder="B.S. Computer Science, State University" className={inputStyle} />
+                  <input 
+                    type="text" 
+                    value={university}
+                    onChange={(e) => setUniversity(e.target.value)}
+                    placeholder="B.S. Computer Science, State University" 
+                    className={inputStyle} 
+                  />
                 </div>
               </div>
             </div>
@@ -296,7 +395,7 @@ export default function OnboardingWizard() {
           ) : (
             <Button 
               onClick={handleComplete} 
-              disabled={isSubmitting || !demoUserId}
+              disabled={isSubmitting || !userId}
               className="bg-neu-success shadow-neu-extruded hover:shadow-neu-hover hover:-translate-y-1 text-white disabled:opacity-50"
             >
               {isSubmitting ? "Saving..." : "Complete Profile ✨"}

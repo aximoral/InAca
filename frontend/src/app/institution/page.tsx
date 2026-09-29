@@ -3,9 +3,16 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from "recharts";
+import { Button } from "@/components/ui/button";
 
 export default function InstitutionDashboard() {
   const [analytics, setAnalytics] = useState<any>(null);
+
+  const handleLogout = () => {
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("role");
+    window.location.href = "/";
+  };
 
   useEffect(() => {
     fetch("http://localhost:8000/api/analytics/institution")
@@ -25,6 +32,9 @@ export default function InstitutionDashboard() {
           <div>
             <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-neu-fg">Institution Analytics</h1>
             <p className="text-lg text-neu-muted mt-2 font-medium">Monitor student placement readiness and industry skill demands.</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <Button variant="outline" onClick={handleLogout} className="shadow-neu-extruded hover:shadow-neu-hover hover:-translate-y-1">Logout</Button>
           </div>
         </div>
 

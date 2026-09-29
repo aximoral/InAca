@@ -12,7 +12,7 @@ try:
 except Exception as e:
     print(f"Warning: could not initialize database on startup. Ensure PG is running and vector extension is enabled. {e}")
 
-app = FastAPI(title="Antigravity 2.0 API")
+app = FastAPI(title="SkillSync API")
 
 from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(
@@ -119,7 +119,7 @@ def get_projects(db: Session = Depends(get_db)):
 @app.get("/api/courses")
 def get_courses(db: Session = Depends(get_db)):
     courses = db.query(models.Course).all()
-    return [{"id": str(c.id), "title": c.title, "provider": c.provider, "description": c.description} for c in courses]
+    return [{"id": str(c.id), "title": c.title, "provider": c.provider, "description": c.description, "url": c.url} for c in courses]
 
 @app.get("/api/analytics/institution")
 def get_institution_analytics(db: Session = Depends(get_db)):
@@ -142,6 +142,125 @@ def get_institution_analytics(db: Session = Depends(get_db)):
         {"cohort": "2025", "score": 82},
         {"cohort": "2026", "score": 60},
     ]
+
+from pydantic import BaseModel
+
+class ProfileUpdateRequest(BaseModel):
+    bio: str
+    skills: List[str]
+
+class ApplicationRequest(BaseModel):
+    student_id: uuid.UUID
+    job_id: uuid.UUID
+
+class EnrollmentRequest(BaseModel):
+    student_id: uuid.UUID
+    course_id: uuid.UUID
+
+@app.put("/api/profiles/{user_id}")
+def update_profile(user_id: uuid.UUID, req: ProfileUpdateRequest, db: Session = Depends(get_db)):
+    profile = db.query(models.Profile).filter(models.Profile.user_id == user_id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    
+    profile.bio = req.bio
+    
+    # Update skills
+    # First, clear existing
+    db.query(models.UserSkill).filter(models.UserSkill.user_id == user_id).delete()
+    
+    for skill_name in req.skills:
+        skill = db.query(models.Skill).filter(func.lower(models.Skill.name) == skill_name.lower()).first()
+        if not skill:
+            skill = models.Skill(name=skill_name)
+            db.add(skill)
+            db.commit()
+            db.refresh(skill)
+            
+        user_skill = models.UserSkill(user_id=user_id, skill_id=skill.id)
+        db.add(user_skill)
+        
+    db.commit()
+    return {"status": "success"}
+
+@app.post("/api/applications")
+def apply_for_job(req: ApplicationRequest, db: Session = Depends(get_db)):
+    app = models.Application(
+        student_id=req.student_id,
+        job_id=req.job_id,
+        status=models.ApplicationStatusEnum.PENDING
+    )
+    db.add(app)
+    db.commit()
+    return {"status": "success"}
+
+@app.get("/api/students/{user_id}/applications")
+def get_student_applications(user_id: uuid.UUID, db: Session = Depends(get_db)):
+    query = text("""
+        SELECT a.id, j.title, p.organization_name as company, a.status
+        FROM applications a
+        JOIN jobs j ON a.job_id = j.id
+        JOIN users u ON j.recruiter_id = u.id
+        JOIN profiles p ON p.user_id = u.id
+        WHERE a.student_id = :student_id
+    """)
+    results = db.execute(query, {"student_id": str(user_id)}).fetchall()
+    return [{"id": str(r[0]), "title": r[1], "company": r[2], "status": r[3]} for r in results]
+
+@app.post("/api/enrollments")
+def enroll_in_course(req: EnrollmentRequest, db: Session = Depends(get_db)):
+    enrollment = models.Enrollment(
+        student_id=req.student_id,
+        course_id=req.course_id,
+        status=models.EnrollmentStatusEnum.ENROLLED
+    )
+    db.add(enrollment)
+    db.commit()
+    return {"status": "success"}
+
+@app.get("/api/students/{user_id}/skills")
+def get_student_skills(user_id: uuid.UUID, db: Session = Depends(get_db)):
+    skills = db.query(models.Skill).join(models.UserSkill).filter(models.UserSkill.user_id == user_id).all()
+class SignupRequest(BaseModel):
+    email: str
+    password: str
+    role: str
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+@app.post("/api/auth/signup")
+def signup(req: SignupRequest, db: Session = Depends(get_db)):
+    # Check if exists
+    existing = db.query(models.User).filter(models.User.email == req.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+        
+    try:
+        role_enum = models.RoleEnum(req.role.upper())
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid role")
+        
+    user = models.User(email=req.email, password=req.password, role=role_enum)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    
+    # Create empty profile
+    profile = models.Profile(user_id=user.id, first_name="", last_name="")
+    db.add(profile)
+    db.commit()
+    
+    return {"id": str(user.id), "email": user.email, "role": user.role.value}
+
+@app.post("/api/auth/login")
+def login(req: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == req.email).first()
+    if not user or user.password != req.password:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+    return {"id": str(user.id), "email": user.email, "role": user.role.value}
 
     return {
         "funnel": {

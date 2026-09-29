@@ -1,10 +1,15 @@
 @import "tailwindcss";
-@plugin "tailwindcss-animate";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
 @custom-variant dark (&:is(.dark *));
 
-@theme {
+@theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
   
   /* Neumorphism Colors */
   --color-neu-bg: #E0E5EC;
@@ -18,6 +23,7 @@
   --shadow-neu-extruded: 9px 9px 16px rgb(163, 177, 198, 0.6), -9px -9px 16px rgba(255, 255, 255, 0.5);
   --shadow-neu-hover: 12px 12px 20px rgb(163, 177, 198, 0.7), -12px -12px 20px rgba(255, 255, 255, 0.6);
   --shadow-neu-small: 5px 5px 10px rgb(163, 177, 198, 0.6), -5px -5px 10px rgba(255, 255, 255, 0.5);
+  --shadow-neu-extruded-small: 5px 5px 10px rgb(163, 177, 198, 0.6), -5px -5px 10px rgba(255, 255, 255, 0.5);
   --shadow-neu-inset: inset 6px 6px 10px rgb(163, 177, 198, 0.6), inset -6px -6px 10px rgba(255, 255, 255, 0.5);
   --shadow-neu-inset-deep: inset 10px 10px 20px rgb(163, 177, 198, 0.7), inset -10px -10px 20px rgba(255, 255, 255, 0.6);
   --shadow-neu-inset-small: inset 3px 3px 6px rgb(163, 177, 198, 0.6), inset -3px -3px 6px rgba(255, 255, 255, 0.5);
@@ -27,36 +33,36 @@
   --font-body: var(--font-dm-sans), sans-serif;
 }
 
+:root {
+  --background: #E0E5EC;
+  --foreground: #3D4852;
+  --card: #E0E5EC;
+  --card-foreground: #3D4852;
+  --popover: #E0E5EC;
+  --popover-foreground: #3D4852;
+  --primary: #6C63FF;
+  --primary-foreground: #ffffff;
+  --secondary: #E0E5EC;
+  --secondary-foreground: #6B7280;
+  --muted: #E0E5EC;
+  --muted-foreground: #6B7280;
+  --accent: #E0E5EC;
+  --accent-foreground: #6C63FF;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: transparent; 
+  --input: transparent;
+  --ring: #6C63FF;
+  --radius: 1rem;
+}
+
 @layer base {
-  :root {
-    --background: #E0E5EC;
-    --foreground: #3D4852;
-    --card: #E0E5EC;
-    --card-foreground: #3D4852;
-    --popover: #E0E5EC;
-    --popover-foreground: #3D4852;
-    --primary: #6C63FF;
-    --primary-foreground: #ffffff;
-    --secondary: #E0E5EC;
-    --secondary-foreground: #6B7280;
-    --muted: #E0E5EC;
-    --muted-foreground: #6B7280;
-    --accent: #E0E5EC;
-    --accent-foreground: #6C63FF;
-    --destructive: #ef4444;
-    --destructive-foreground: #ffffff;
-    
-    /* Neumorphism removes all borders natively */
-    --border: transparent; 
-    --input: transparent;
-    --ring: #6C63FF;
-    --radius: 1rem;
-  }
-  
   body {
     @apply bg-neu-bg text-neu-fg font-body antialiased;
   }
-  
+  html {
+    @apply font-sans;
+  }
   h1, h2, h3, h4, h5, h6 {
     @apply font-display tracking-tight text-neu-fg;
   }

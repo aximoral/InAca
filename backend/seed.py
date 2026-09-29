@@ -11,20 +11,13 @@ def generate_mock_embedding():
 
 def seed_data():
     db = SessionLocal()
+    from database import engine, Base
+    print("Dropping all tables...")
+    Base.metadata.drop_all(bind=engine)
+    print("Creating all tables...")
+    Base.metadata.create_all(bind=engine)
     
-    print("Clearing old data...")
-    db.query(models.Enrollment).delete()
-    db.query(models.CourseSkill).delete()
-    db.query(models.Course).delete()
-    db.query(models.Project).delete()
-    db.query(models.Application).delete()
-    db.query(models.JobSkill).delete()
-    db.query(models.Job).delete()
-    db.query(models.UserSkill).delete()
-    db.query(models.Skill).delete()
-    db.query(models.Profile).delete()
-    db.query(models.User).delete()
-    db.commit()
+    db = SessionLocal()
 
     print("Creating core skills...")
     skill_names = ["Python", "React", "Machine Learning", "Data Analysis", "Project Management", "UI/UX Design", "Cloud Computing", "Cybersecurity", "DevOps"]
@@ -33,6 +26,23 @@ def seed_data():
         skill = models.Skill(name=name, category="Technical")
         db.add(skill)
         skills.append(skill)
+    db.commit()
+
+    print("Creating Demo Users...")
+    demo_creds = [
+        ("student@demo.com", models.RoleEnum.STUDENT, "Demo", "Student", "A passionate learner."),
+        ("recruiter@demo.com", models.RoleEnum.RECRUITER, "Demo", "Recruiter", "Looking for top talent."),
+        ("academician@demo.com", models.RoleEnum.ACADEMICIAN, "Demo", "Professor", "Bridging the gap between theory and practice."),
+        ("institution@demo.com", models.RoleEnum.INSTITUTION, "Demo", "Institution", "Managing academic excellence.")
+    ]
+    
+    demo_users = {}
+    for email, role, fname, lname, bio in demo_creds:
+        u = models.User(email=email, password="password123", role=role)
+        db.add(u)
+        db.commit()
+        db.add(models.Profile(user_id=u.id, first_name=fname, last_name=lname, bio=bio, organization_name="SkillSync Demo", embedding=generate_mock_embedding()))
+        demo_users[role] = u
     db.commit()
 
     print("Creating Institutions and Academicians...")
@@ -89,12 +99,46 @@ def seed_data():
     db.commit()
 
     print("Creating Courses...")
+    courses_data = [
+        {
+            "title": "CS50's Introduction to Programming with Python",
+            "provider": "Harvard University / edX",
+            "description": "Learn how to read and write code as well as how to test and \"debug\" it. Designed for students with or without prior programming experience.",
+            "url": "https://www.edx.org/learn/python/harvard-university-cs50-s-introduction-to-programming-with-python"
+        },
+        {
+            "title": "Machine Learning Specialization",
+            "provider": "Stanford / DeepLearning.AI",
+            "description": "A foundational online program created in collaboration between DeepLearning.AI and Stanford Online, taught by Andrew Ng.",
+            "url": "https://www.coursera.org/specializations/machine-learning-introduction"
+        },
+        {
+            "title": "Google Data Analytics Professional Certificate",
+            "provider": "Google / Coursera",
+            "description": "Get on the fast track to a career in Data Analytics. Learn in-demand skills like SQL, Tableau, and R programming.",
+            "url": "https://www.coursera.org/professional-certificates/google-data-analytics"
+        },
+        {
+            "title": "Meta Front-End Developer Professional Certificate",
+            "provider": "Meta / Coursera",
+            "description": "Launch your career as a front-end developer. Build job-ready skills for an in-demand career and earn a credential from Meta.",
+            "url": "https://www.coursera.org/professional-certificates/meta-front-end-developer"
+        },
+        {
+            "title": "AWS Cloud Practitioner Essentials",
+            "provider": "Amazon Web Services",
+            "description": "Learn the fundamentals of the AWS Cloud, including basic cloud concepts, security, architecture, and pricing.",
+            "url": "https://aws.amazon.com/training/digital/aws-cloud-practitioner-essentials/"
+        }
+    ]
+    
     courses = []
-    for _ in range(8):
+    for data in courses_data:
         c = models.Course(
-            title=fake.catch_phrase() + " Certification",
-            provider=random.choice(["Coursera", "Udemy", "edX", "TechCorp Academy"]),
-            description=fake.text(),
+            title=data["title"],
+            provider=data["provider"],
+            description=data["description"],
+            url=data["url"],
             embedding=generate_mock_embedding()
         )
         db.add(c)

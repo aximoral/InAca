@@ -15,7 +15,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Antigravity 2.0",
+  title: "SkillSync Platform",
   description: "Academia-Industry Collaboration Platform",
 };
 

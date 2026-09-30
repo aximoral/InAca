@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -163,7 +163,7 @@ export default function RecruiterDashboard() {
                   <CardHeader className="bg-neu-bg shadow-neu-extruded-small z-10">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full shadow-neu-inset flex items-center justify-center text-xl">
-                         o"
+                         ✨
                       </div>
                       <div>
                          <CardTitle className="text-2xl">AI Candidate Matches</CardTitle>
@@ -226,7 +226,7 @@ export default function RecruiterDashboard() {
                   <CardHeader className="bg-neu-bg shadow-neu-extruded-small z-10">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full shadow-neu-inset flex items-center justify-center text-xl">
-                         👤
+                         ðŸ‘¤
                       </div>
                       <div>
                          <CardTitle className="text-2xl">Job Applicants</CardTitle>

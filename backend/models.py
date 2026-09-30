@@ -22,6 +22,7 @@ class ProjectTypeEnum(enum.Enum):
     LIVE_PROJECT = "LIVE_PROJECT"
     FDP = "FDP"
     MENTORSHIP = "MENTORSHIP"
+    RESEARCH_PROPOSAL = "RESEARCH_PROPOSAL"
 
 class User(Base):
     __tablename__ = "users"
@@ -38,6 +39,7 @@ class User(Base):
     applications = relationship("Application", back_populates="student")
     projects = relationship("Project", back_populates="sponsor")
     enrollments = relationship("Enrollment", back_populates="student")
+    project_applications = relationship("ProjectApplication", back_populates="academician")
 
 class Profile(Base):
     __tablename__ = "profiles"
@@ -155,3 +157,15 @@ class Project(Base):
     sponsor_id = Column(UUID(as_uuid=True), ForeignKey("users.id")) # Usually a Recruiter
     
     sponsor = relationship("User", back_populates="projects")
+    applications = relationship("ProjectApplication", back_populates="project")
+
+class ProjectApplication(Base):
+    __tablename__ = "project_applications"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    academician_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"))
+    status = Column(String, default="PENDING")
+
+    academician = relationship("User", back_populates="project_applications")
+    project = relationship("Project", back_populates="applications")

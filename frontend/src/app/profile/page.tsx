@@ -181,8 +181,7 @@ export default function ProfilePage() {
             </CardContent>
             <CardFooter className="justify-center pb-8 pt-4">
               <Button onClick={() => setIsEditing(true)} className="px-8 shadow-neu-extruded hover:shadow-neu-hover hover:-translate-y-1 text-lg">
-                Edit Profile ✏️
-              </Button>
+                Edit Profile ✏️</Button>
             </CardFooter>
           </Card>
         ) : (

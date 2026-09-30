@@ -184,7 +184,18 @@ def get_projects(db: Session = Depends(get_db)):
 @app.get("/api/courses")
 def get_courses(db: Session = Depends(get_db)):
     courses = db.query(models.Course).all()
-    return [{"id": str(c.id), "title": c.title, "provider": c.provider, "description": c.description, "url": c.url} for c in courses]
+    results = []
+    for c in courses:
+        course_skills = db.query(models.Skill.name).join(models.CourseSkill).filter(models.CourseSkill.course_id == c.id).all()
+        results.append({
+            "id": str(c.id),
+            "title": c.title,
+            "provider": c.provider,
+            "description": c.description,
+            "url": c.url,
+            "skills_taught": [s[0] for s in course_skills]
+        })
+    return results
 
 @app.get("/api/analytics/institution")
 def get_institution_analytics(db: Session = Depends(get_db)):
@@ -223,6 +234,16 @@ class ApplicationRequest(BaseModel):
 class EnrollmentRequest(BaseModel):
     student_id: uuid.UUID
     course_id: uuid.UUID
+
+class ProjectApplicationRequest(BaseModel):
+    academician_id: uuid.UUID
+    project_id: uuid.UUID
+
+class ProjectCreateRequest(BaseModel):
+    title: str
+    description: str
+    type: str
+    sponsor_id: uuid.UUID
 
 @app.put("/api/profiles/{user_id}")
 def update_profile(user_id: uuid.UUID, req: ProfileUpdateRequest, db: Session = Depends(get_db)):
@@ -286,11 +307,63 @@ def enroll_in_course(req: EnrollmentRequest, db: Session = Depends(get_db)):
     enrollment = models.Enrollment(
         student_id=req.student_id,
         course_id=req.course_id,
-        status=models.EnrollmentStatusEnum.ENROLLED
+        status="ENROLLED"
     )
     db.add(enrollment)
     db.commit()
     return {"status": "success"}
+
+@app.post("/api/projects/apply")
+def apply_to_project(req: ProjectApplicationRequest, db: Session = Depends(get_db)):
+    # Check if already applied
+    existing = db.query(models.ProjectApplication).filter(
+        models.ProjectApplication.academician_id == req.academician_id,
+        models.ProjectApplication.project_id == req.project_id
+    ).first()
+    if existing:
+        return {"status": "already_applied"}
+        
+    application = models.ProjectApplication(
+        academician_id=req.academician_id,
+        project_id=req.project_id,
+        status="PENDING"
+    )
+    db.add(application)
+    db.commit()
+    return {"status": "success"}
+
+@app.get("/api/academicians/{user_id}/collaborations")
+def get_collaborations(user_id: uuid.UUID, db: Session = Depends(get_db)):
+    apps = db.query(models.ProjectApplication).filter(models.ProjectApplication.academician_id == user_id).all()
+    results = []
+    for app in apps:
+        proj = db.query(models.Project).filter(models.Project.id == app.project_id).first()
+        if proj:
+            sponsor = db.query(models.User).filter(models.User.id == proj.sponsor_id).first()
+            sponsor_name = sponsor.profile.first_name + " " + sponsor.profile.last_name if sponsor and sponsor.profile else "Unknown Sponsor"
+            results.append({
+                "id": str(proj.id),
+                "title": proj.title,
+                "type": proj.type.name if hasattr(proj.type, 'name') else str(proj.type),
+                "sponsor_name": sponsor_name,
+                "status": app.status
+            })
+    return results
+
+@app.post("/api/projects")
+def create_project(req: ProjectCreateRequest, db: Session = Depends(get_db)):
+    from embeddings import get_embedding
+    embedding = get_embedding(req.title + " " + req.description)
+    project = models.Project(
+        title=req.title,
+        description=req.description,
+        type=req.type,
+        sponsor_id=req.sponsor_id,
+        embedding=embedding
+    )
+    db.add(project)
+    db.commit()
+    return {"status": "success", "id": str(project.id)}
 
 @app.get("/api/students/{user_id}/skills")
 def get_student_skills(user_id: uuid.UUID, db: Session = Depends(get_db)):

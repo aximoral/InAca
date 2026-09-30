@@ -16,13 +16,16 @@ export default function AuthPortal() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleAuth = async (e?: React.FormEvent) => {
+  const handleAuth = async (e?: React.FormEvent, overrideEmail?: string, overridePassword?: string) => {
     if (e) e.preventDefault();
     setLoading(true);
     setError("");
 
+    const finalEmail = overrideEmail || email;
+    const finalPassword = overridePassword || password;
+
     const endpoint = isLogin ? "/api/auth/login" : "/api/auth/signup";
-    const payload = isLogin ? { email, password } : { email, password, role };
+    const payload = isLogin ? { email: finalEmail, password: finalPassword } : { email: finalEmail, password: finalPassword, role };
 
     try {
       const res = await fetch(`http://localhost:8000${endpoint}`, {
@@ -59,10 +62,7 @@ export default function AuthPortal() {
     setEmail(demoEmail);
     setPassword("password123");
     setIsLogin(true);
-    // Slight delay to allow state to visually update before firing
-    setTimeout(() => {
-      handleAuth();
-    }, 100);
+    handleAuth(undefined, demoEmail, "password123");
   };
 
   const inputStyle = "w-full bg-neu-bg shadow-neu-inset-deep rounded-2xl p-4 text-neu-fg outline-none focus-ring font-medium placeholder:text-neu-muted/50 transition-all";

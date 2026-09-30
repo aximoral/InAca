@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +22,7 @@ export default function StudentDashboard() {
   const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
   const [appliedJobs, setAppliedJobs] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState("matches");
+  const [skillFilter, setSkillFilter] = useState<string[]>([]);
 
   useEffect(() => {
     // Read from Auth state
@@ -194,7 +195,7 @@ export default function StudentDashboard() {
                             <div className="mb-8 p-4 rounded-[20px] bg-red-500/5 border border-red-500/10 shadow-neu-inset-deep">
                               <div className="flex justify-between items-center mb-3">
                                 <h4 className="text-sm font-bold text-red-500/80 uppercase tracking-wider">Skill Gap Identified</h4>
-                                <Button variant="ghost" size="sm" onClick={() => setActiveTab("learning")} className="h-6 text-xs font-bold text-neu-accent hover:text-neu-accent/80 p-0 hover:bg-transparent">Close the Gap ↗</Button>
+                                <Button variant="ghost" size="sm" onClick={() => { setActiveTab("learning"); setSkillFilter(job.missing_skills || []); }} className="h-6 text-xs font-bold text-neu-accent hover:text-neu-accent/80 p-0 hover:bg-transparent">Close the Gap ↗</Button>
                               </div>
                               <div className="flex flex-wrap gap-2">
                                 {job.missing_skills.map((skill: string, i: number) => (
@@ -212,7 +213,7 @@ export default function StudentDashboard() {
                             onClick={() => handleApply(job.job_id)}
                             className={hasApplied ? "bg-neu-success text-white shadow-neu-inset" : ""}
                           >
-                            {applyingJobId === job.job_id ? "Applying..." : hasApplied ? "Applied ✅" : "Apply Now"}
+                            {applyingJobId === job.job_id ? "Applying..." : hasApplied ? "Applied ✓" : "Apply Now"}
                           </Button>
                         </CardContent>
                       </Card>
@@ -227,7 +228,7 @@ export default function StudentDashboard() {
                 </TabsContent>
 
                 <TabsContent value="learning" className="space-y-8">
-                  <CourseHub studentId={selectedStudentId} />
+                  <CourseHub studentId={selectedStudentId} skillFilter={skillFilter} setSkillFilter={setSkillFilter} />
                 </TabsContent>
                 
                 <TabsContent value="applications">
@@ -261,7 +262,7 @@ export default function StudentDashboard() {
   );
 }
 
-function CourseHub({ studentId }: { studentId: string }) {
+function CourseHub({ studentId, skillFilter, setSkillFilter }: { studentId: string, skillFilter: string[], setSkillFilter: (f: string[]) => void }) {
   const [courses, setCourses] = useState<any[]>([]);
   const [enrollingId, setEnrollingId] = useState<string | null>(null);
   const [enrolledCourses, setEnrolledCourses] = useState<Set<string>>(new Set());
@@ -291,10 +292,30 @@ function CourseHub({ studentId }: { studentId: string }) {
     }
   };
 
+  const filteredCourses = skillFilter.length > 0 
+    ? courses.filter(c => c.skills_taught?.some((s: string) => skillFilter.includes(s)))
+    : courses;
+
   return (
     <div className="space-y-8">
-      {courses.map(course => {
-        const isEnrolled = enrolledCourses.has(course.id);
+      {skillFilter.length > 0 && (
+        <div className="flex justify-between items-center bg-neu-bg p-4 rounded-[24px] shadow-neu-inset-deep">
+          <p className="text-neu-muted font-bold ml-4">
+            Showing courses for: <span className="text-neu-accent">{skillFilter.join(", ")}</span>
+          </p>
+          <Button variant="ghost" onClick={() => setSkillFilter([])} className="text-red-500 hover:text-red-600">
+            Clear Filter
+          </Button>
+        </div>
+      )}
+      
+      {filteredCourses.length === 0 ? (
+        <div className="text-center p-12 bg-neu-bg rounded-[32px] shadow-neu-inset-deep">
+          <p className="text-neu-muted font-bold text-lg">No courses found matching these skills.</p>
+        </div>
+      ) : (
+        filteredCourses.map(course => {
+          const isEnrolled = enrolledCourses.has(course.id);
         
         return (
           <Card key={course.id}>
@@ -309,11 +330,11 @@ function CourseHub({ studentId }: { studentId: string }) {
             <CardContent>
               <p className="text-base text-neu-muted mb-8 leading-relaxed">{course.description}</p>
               <a 
-                href={course.url || "#"} 
-                target={course.url ? "_blank" : undefined} 
+                href={course.url && course.url !== "#" ? course.url : "#"} 
+                target={course.url && course.url !== "#" ? "_blank" : undefined} 
                 rel="noopener noreferrer"
                 onClick={(e) => {
-                  if (!course.url || isEnrolled || enrollingId === course.id) {
+                  if (!course.url || course.url === "#" || isEnrolled || enrollingId === course.id) {
                     e.preventDefault();
                   }
                 }}
@@ -332,13 +353,13 @@ function CourseHub({ studentId }: { studentId: string }) {
                   }}
                   className={isEnrolled ? "bg-neu-accent text-white shadow-neu-inset pointer-events-none" : ""}
                 >
-                  {enrollingId === course.id ? "Enrolling..." : isEnrolled ? "Enrolled ✅" : "Enroll to close skill gap"}
+                  {enrollingId === course.id ? "Enrolling..." : isEnrolled ? "Enrolled ✓" : "Enroll"}
                 </Button>
               </a>
             </CardContent>
           </Card>
         )
-      })}
+      }))}
     </div>
   );
 }

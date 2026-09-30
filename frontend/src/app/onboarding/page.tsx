@@ -385,8 +385,7 @@ export default function OnboardingWizard() {
             onClick={() => setStep(s => Math.max(1, s - 1))}
             disabled={step === 1 || isSubmitting}
           >
-            ← Back
-          </Button>
+            ← ← Back</Button>
           
           {step < totalSteps ? (
             <Button onClick={() => setStep(s => Math.min(totalSteps, s + 1))}>
@@ -398,8 +397,7 @@ export default function OnboardingWizard() {
               disabled={isSubmitting || !userId}
               className="bg-neu-success shadow-neu-extruded hover:shadow-neu-hover hover:-translate-y-1 text-white disabled:opacity-50"
             >
-              {isSubmitting ? "Saving..." : "Complete Profile ✨"}
-            </Button>
+              {isSubmitting ? "Saving..." : "Complete Profile ✨</Button>
           )}
         </div>
       </Card>

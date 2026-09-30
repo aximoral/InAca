@@ -108,32 +108,58 @@ def seed_data():
         {
             "title": "CS50's Introduction to Programming with Python",
             "provider": "Harvard University / edX",
-            "description": "Learn how to read and write code as well as how to test and \"debug\" it. Designed for students with or without prior programming experience.",
-            "url": "https://www.edx.org/learn/python/harvard-university-cs50-s-introduction-to-programming-with-python"
+            "description": "Learn how to read and write code as well as how to test and \"debug\" it.",
+            "url": "https://www.edx.org/learn/python/harvard-university-cs50-s-introduction-to-programming-with-python",
+            "skills_taught": ["Python"]
         },
         {
             "title": "Machine Learning Specialization",
             "provider": "Stanford / DeepLearning.AI",
             "description": "A foundational online program created in collaboration between DeepLearning.AI and Stanford Online, taught by Andrew Ng.",
-            "url": "https://www.coursera.org/specializations/machine-learning-introduction"
+            "url": "https://www.coursera.org/specializations/machine-learning-introduction",
+            "skills_taught": ["Machine Learning", "Python"]
         },
         {
             "title": "Google Data Analytics Professional Certificate",
             "provider": "Google / Coursera",
             "description": "Get on the fast track to a career in Data Analytics. Learn in-demand skills like SQL, Tableau, and R programming.",
-            "url": "https://www.coursera.org/professional-certificates/google-data-analytics"
+            "url": "https://www.coursera.org/professional-certificates/google-data-analytics",
+            "skills_taught": ["Data Analysis", "SQL", "R"]
         },
         {
-            "title": "Meta Front-End Developer Professional Certificate",
-            "provider": "Meta / Coursera",
-            "description": "Launch your career as a front-end developer. Build job-ready skills for an in-demand career and earn a credential from Meta.",
-            "url": "https://www.coursera.org/professional-certificates/meta-front-end-developer"
+            "title": "HTML & CSS Crash Course",
+            "provider": "Scrimba",
+            "description": "Learn how to build beautiful user interfaces from scratch using standard web technologies.",
+            "url": "https://scrimba.com/learn/htmlandcss",
+            "skills_taught": ["HTML", "CSS"]
+        },
+        {
+            "title": "Docker & PostgreSQL Bootcamp",
+            "provider": "Udemy",
+            "description": "Master containerization and database management for modern backend systems.",
+            "url": "https://www.udemy.com/topic/docker/",
+            "skills_taught": ["Docker", "PostgreSQL"]
+        },
+        {
+            "title": "Advanced Node.js API Development",
+            "provider": "Pluralsight",
+            "description": "Build scalable and performant REST APIs using Node.js and Express.",
+            "url": "https://www.pluralsight.com/paths/node-js",
+            "skills_taught": ["Node.js"]
+        },
+        {
+            "title": "React & TypeScript Masterclass",
+            "provider": "Frontend Masters",
+            "description": "Take your frontend skills to the next level with strict typing and advanced React patterns.",
+            "url": "https://frontendmasters.com/courses/react-typescript/",
+            "skills_taught": ["React", "TypeScript"]
         },
         {
             "title": "AWS Cloud Practitioner Essentials",
             "provider": "Amazon Web Services",
             "description": "Learn the fundamentals of the AWS Cloud, including basic cloud concepts, security, architecture, and pricing.",
-            "url": "https://aws.amazon.com/training/digital/aws-cloud-practitioner-essentials/"
+            "url": "https://aws.amazon.com/training/digital/aws-cloud-practitioner-essentials/",
+            "skills_taught": ["AWS", "Cloud Computing"]
         }
     ]
     
@@ -147,6 +173,13 @@ def seed_data():
             embedding=get_embedding(data["title"] + " " + data["description"])
         )
         db.add(c)
+        db.commit() # Commit to get c.id
+        
+        # Link skills to course
+        taught_skills = [s for s in skills if s.name in data["skills_taught"]]
+        for skill in taught_skills:
+            db.add(models.CourseSkill(course_id=c.id, skill_id=skill.id))
+            
         courses.append(c)
     db.commit()
 

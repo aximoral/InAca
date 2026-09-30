@@ -188,8 +188,8 @@ export default function RecruiterDashboard() {
                       </div>
                     ) : (
                       <div className="space-y-6">
-                        {matches.map((match) => (
-                          <div key={match.user_id} className="flex flex-col sm:flex-row sm:items-center justify-between p-6 shadow-neu-extruded rounded-[24px] bg-neu-bg transition-all duration-300 hover:shadow-neu-hover hover:-translate-y-1 gap-6">
+                        {matches.map((match, index) => (
+                          <div key={`${match.user_id}-${index}`} className="flex flex-col sm:flex-row sm:items-center justify-between p-6 shadow-neu-extruded rounded-[24px] bg-neu-bg transition-all duration-300 hover:shadow-neu-hover hover:-translate-y-1 gap-6">
                             <div className="flex items-center gap-6">
                               <div className="w-14 h-14 shrink-0 rounded-full shadow-neu-inset-deep flex items-center justify-center font-bold text-xl text-neu-accent">
                                 {match.first_name[0]}{match.last_name[0]}
@@ -248,8 +248,8 @@ export default function RecruiterDashboard() {
                       </div>
                     ) : (
                       <div className="space-y-6">
-                        {applicants.map((app) => (
-                          <div key={app.user_id} className="flex flex-col sm:flex-row sm:items-center justify-between p-6 shadow-neu-extruded rounded-[24px] bg-neu-bg transition-all duration-300 hover:shadow-neu-hover hover:-translate-y-1 gap-6">
+                        {applicants.map((app, index) => (
+                          <div key={`${app.user_id}-${index}`} className="flex flex-col sm:flex-row sm:items-center justify-between p-6 shadow-neu-extruded rounded-[24px] bg-neu-bg transition-all duration-300 hover:shadow-neu-hover hover:-translate-y-1 gap-6">
                             <div className="flex items-center gap-6">
                               <div className="w-14 h-14 shrink-0 rounded-full shadow-neu-inset-deep flex items-center justify-center font-bold text-xl text-neu-accent">
                                 {app.first_name[0]}{app.last_name[0]}

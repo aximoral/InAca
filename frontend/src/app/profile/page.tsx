@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,10 @@ export default function ProfilePage() {
   const [bio, setBio] = useState("");
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [currentSkill, setCurrentSkill] = useState("");
+  const [githubUrl, setGithubUrl] = useState("");
+  const [linkedinUrl, setLinkedinUrl] = useState("");
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [resumeFileName, setResumeFileName] = useState<string | null>(null);
 
   useEffect(() => {
     const id = localStorage.getItem("user_id");
@@ -47,6 +51,8 @@ export default function ProfilePage() {
           setFirstName(profileData.first_name || "");
           setLastName(profileData.last_name || "");
           setBio(profileData.bio || "");
+          setGithubUrl(profileData.github_url || "");
+          setLinkedinUrl(profileData.linkedin_url || "");
         }
         
         if (skillsRes.ok) {
@@ -96,12 +102,20 @@ export default function ProfilePage() {
           first_name: firstName,
           last_name: lastName,
           bio: bio,
-          skills: selectedSkills
+          skills: selectedSkills,
+          github_url: githubUrl,
+          linkedin_url: linkedinUrl
         })
       });
-
+      if (response.ok && resumeFile) {
+        const formData = new FormData();
+        formData.append("file", resumeFile);
+        await fetch(`http://localhost:8000/api/profiles/${userId}/resume`, {
+          method: "POST",
+          body: formData
+        });
+      }
       if (response.ok) {
-        // Update local view state
         const updatedProfile = await response.json();
         setProfile(updatedProfile);
         setSkills(selectedSkills);
@@ -115,14 +129,6 @@ export default function ProfilePage() {
       setSaving(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-neu-bg flex items-center justify-center">
-        <div className="animate-pulse text-neu-muted text-xl font-bold">Loading Profile...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-neu-bg p-8">
@@ -155,6 +161,11 @@ export default function ProfilePage() {
               <CardDescription className="text-lg text-neu-muted mt-2">
                 {profile?.organization_name || "Independent Student"}
               </CardDescription>
+              <div className="flex justify-center gap-4 mt-6">
+                {profile?.github_url && <a href={profile.github_url} target="_blank" rel="noopener noreferrer" className="text-neu-accent font-bold hover:underline">GitHub</a>}
+                {profile?.linkedin_url && <a href={profile.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-neu-accent font-bold hover:underline">LinkedIn</a>}
+                {profile?.resume_path && <a href={`http://localhost:8000/${profile.resume_path}`} target="_blank" rel="noopener noreferrer" className="text-emerald-600 font-bold hover:underline">View Resume</a>}
+              </div>
             </CardHeader>
             <CardContent className="text-center pt-6 space-y-8">
               <div className="p-6 bg-neu-bg shadow-neu-inset rounded-2xl">
@@ -181,7 +192,7 @@ export default function ProfilePage() {
             </CardContent>
             <CardFooter className="justify-center pb-8 pt-4">
               <Button onClick={() => setIsEditing(true)} className="px-8 shadow-neu-extruded hover:shadow-neu-hover hover:-translate-y-1 text-lg">
-                Edit Profile ✏️</Button>
+                Edit Profile âœï¸</Button>
             </CardFooter>
           </Card>
         ) : (
@@ -219,6 +230,23 @@ export default function ProfilePage() {
                   className="w-full bg-neu-bg border-none shadow-neu-inset rounded-2xl p-4 text-neu-fg placeholder:text-neu-muted focus:ring-2 focus:ring-neu-accent/50 focus:shadow-neu-inset-deep transition-all duration-300 h-14"
                 />
               </div>
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <Label className="block text-sm font-bold text-neu-fg mb-2 ml-2">GitHub URL</Label>
+                    <Input placeholder="https://github.com/..." value={githubUrl} onChange={(e) => setGithubUrl(e.target.value)} className="w-full bg-neu-bg border-none shadow-neu-inset rounded-2xl p-4 text-neu-fg placeholder:text-neu-muted focus:ring-2 focus:ring-neu-accent/50 focus:shadow-neu-inset-deep transition-all duration-300 h-14" />
+                  </div>
+                  <div>
+                    <Label className="block text-sm font-bold text-neu-fg mb-2 ml-2">LinkedIn URL</Label>
+                    <Input placeholder="https://linkedin.com/in/..." value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)} className="w-full bg-neu-bg border-none shadow-neu-inset rounded-2xl p-4 text-neu-fg placeholder:text-neu-muted focus:ring-2 focus:ring-neu-accent/50 focus:shadow-neu-inset-deep transition-all duration-300 h-14" />
+                  </div>
+                </div>
+                <div>
+                  <Label className="block text-sm font-bold text-neu-fg mb-2 ml-2">Update Resume (PDF)</Label>
+                  <div className="flex items-center gap-4">
+                    <Input type="file" accept=".pdf" onChange={(e) => { if (e.target.files && e.target.files[0]) { setResumeFile(e.target.files[0]); setResumeFileName(e.target.files[0].name); } }} className="w-full bg-neu-bg border-none shadow-neu-inset rounded-2xl p-3 text-neu-fg file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-neu-accent file:text-white hover:file:bg-neu-accent/80 transition-all duration-300 cursor-pointer h-auto" />
+                    {resumeFileName && <span className="text-sm font-bold text-emerald-600 truncate max-w-[200px]">Selected: {resumeFileName}</span>}
+                  </div>
+                </div>
 
               <div className="pt-4 border-t border-white/10">
                 <Label className="block text-sm font-bold text-neu-fg mb-2 ml-2">Skills (Press Enter to add)</Label>
@@ -239,7 +267,7 @@ export default function ProfilePage() {
                         onClick={() => removeSkill(skill)}
                       >
                         {skill}
-                        <span className="text-white/50 group-hover:text-white transition-colors">×</span>
+                        <span className="text-white/50 group-hover:text-white transition-colors">Ã—</span>
                       </Badge>
                     ))}
                     {selectedSkills.length === 0 && (

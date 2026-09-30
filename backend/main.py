@@ -1,4 +1,7 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+﻿from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File
+from fastapi.staticfiles import StaticFiles
+import os
+import shutil
 from sqlalchemy.orm import Session
 from sqlalchemy import text, func
 from typing import List
@@ -28,6 +31,9 @@ except Exception as e:
     print(f"Warning: could not initialize database on startup. Ensure PG is running and vector extension is enabled. {e}")
 
 app = FastAPI(title="SkillSync API")
+import os
+os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(
@@ -226,6 +232,8 @@ class ProfileUpdateRequest(BaseModel):
     last_name: str
     bio: str
     skills: List[str]
+    github_url: Optional[str] = None
+    linkedin_url: Optional[str] = None
 
 class ApplicationRequest(BaseModel):
     student_id: uuid.UUID
@@ -254,6 +262,8 @@ def update_profile(user_id: uuid.UUID, req: ProfileUpdateRequest, db: Session = 
     profile.bio = req.bio
     profile.first_name = req.first_name
     profile.last_name = req.last_name
+    if req.github_url is not None: profile.github_url = req.github_url
+    if req.linkedin_url is not None: profile.linkedin_url = req.linkedin_url
     
     # Generate Semantic Vector Embedding
     combined_text = f"{req.bio}. Skills: {', '.join(req.skills)}"
@@ -419,3 +429,20 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
         "skills": skill_demand,
         "readiness": readiness
     }
+
+
+@app.post("/api/profiles/{user_id}/resume")
+async def upload_resume(user_id: uuid.UUID, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    profile = db.query(models.Profile).filter(models.Profile.user_id == user_id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+        
+    os.makedirs("uploads", exist_ok=True)
+    file_path = f"uploads/{user_id}_{file.filename}"
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    profile.resume_path = file_path
+    db.commit()
+    return {"message": "Resume uploaded successfully", "path": file_path}

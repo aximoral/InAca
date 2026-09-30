@@ -157,17 +157,16 @@ export default function RecruiterDashboard() {
                   <TabsTrigger value="applicants" className="rounded-full data-[state=active]:shadow-neu-inset-deep data-[state=active]:bg-neu-bg data-[state=active]:text-neu-fg font-bold">Applicants</TabsTrigger>
                 </TabsList>
               </div>
-
               <TabsContent value="matches" className="mt-0 outline-none">
                 <Card className="min-h-[600px] flex flex-col overflow-hidden">
                   <CardHeader className="bg-neu-bg shadow-neu-extruded-small z-10">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full shadow-neu-inset flex items-center justify-center text-xl">
-                         ✨
-                      </div>
-                      <div>
-                         <CardTitle className="text-2xl">AI Candidate Matches</CardTitle>
-                         {selectedJobId && <CardDescription>Ranked by cosine similarity for selected posting</CardDescription>}
+                       ✨
+                    </div>
+                    <div>
+                       <CardTitle className="text-2xl">AI Candidate Matches</CardTitle>
+                         {selectedJobId && <CardDescription>Students who best fit the requirements for this role</CardDescription>}
                       </div>
                     </div>
                   </CardHeader>
@@ -175,7 +174,7 @@ export default function RecruiterDashboard() {
                   <div className="p-8 flex-1 bg-neu-bg shadow-neu-inset">
                     {!selectedJobId ? (
                       <div className="flex items-center justify-center h-full text-neu-muted font-bold text-lg">
-                        Select a job posting on the left to see matched candidates.
+                        Select a job posting on the left to see matches.
                       </div>
                     ) : loadingMatches ? (
                       <div className="animate-pulse space-y-6">
@@ -185,51 +184,48 @@ export default function RecruiterDashboard() {
                       </div>
                     ) : matches.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-neu-muted font-bold text-lg">
-                        <p>No candidates found matching this role's vector footprint.</p>
+                        <p>No matches found yet.</p>
                       </div>
                     ) : (
                       <div className="space-y-6">
-                        {matches.map((match) => {
-                          const matchPercent = Math.round(match.match_score * 100);
-                          
-                          return (
-                            <div key={match.user_id} className="flex flex-col sm:flex-row sm:items-center justify-between p-6 shadow-neu-extruded rounded-[24px] bg-neu-bg transition-all duration-300 hover:shadow-neu-hover hover:-translate-y-1 gap-6">
-                              <div className="flex items-center gap-6">
-                                <div className="w-14 h-14 shrink-0 rounded-full shadow-neu-inset-deep flex items-center justify-center font-bold text-xl text-neu-accent">
-                                  {match.first_name[0]}{match.last_name[0]}
-                                </div>
-                                <div>
-                                  <h4 className="font-bold text-lg text-neu-fg mb-1">{match.first_name} {match.last_name}</h4>
-                                  <p className="text-sm text-neu-muted line-clamp-2 leading-relaxed font-medium">
-                                    {match.bio}
-                                  </p>
-                                </div>
+                        {matches.map((match) => (
+                          <div key={match.user_id} className="flex flex-col sm:flex-row sm:items-center justify-between p-6 shadow-neu-extruded rounded-[24px] bg-neu-bg transition-all duration-300 hover:shadow-neu-hover hover:-translate-y-1 gap-6">
+                            <div className="flex items-center gap-6">
+                              <div className="w-14 h-14 shrink-0 rounded-full shadow-neu-inset-deep flex items-center justify-center font-bold text-xl text-neu-accent">
+                                {match.first_name[0]}{match.last_name[0]}
                               </div>
-                              
-                              <div className="flex flex-col sm:items-end gap-3 shrink-0">
-                                <Badge variant={matchPercent > 80 ? "default" : "secondary"} className={matchPercent > 80 ? "bg-neu-success text-white shadow-neu-extruded" : ""}>
-                                  {matchPercent}% Match
-                                </Badge>
-                                <Button variant="outline" size="sm" onClick={() => setViewingCandidateId(match.user_id)}>View Profile</Button>
+                              <div>
+                                <h4 className="font-bold text-lg text-neu-fg mb-1">{match.first_name} {match.last_name}</h4>
+                                <p className="text-sm text-neu-muted line-clamp-2 leading-relaxed font-medium">
+                                  {match.bio}
+                                </p>
                               </div>
                             </div>
-                          )
-                        })}
+                            
+                            <div className="flex flex-col sm:items-end gap-3 shrink-0">
+                              <Badge variant="secondary" className="bg-emerald-50 text-emerald-600 border-none shadow-neu-inset font-bold">
+                                {Math.round(match.match_score * 100)}% Match
+                              </Badge>
+                              <Button variant="outline" size="sm" onClick={() => setViewingCandidateId(match.user_id)}>View Profile</Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
                 </Card>
               </TabsContent>
 
+
               <TabsContent value="applicants" className="mt-0 outline-none">
                 <Card className="min-h-[600px] flex flex-col overflow-hidden">
                   <CardHeader className="bg-neu-bg shadow-neu-extruded-small z-10">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full shadow-neu-inset flex items-center justify-center text-xl">
-                         ðŸ‘¤
-                      </div>
-                      <div>
-                         <CardTitle className="text-2xl">Job Applicants</CardTitle>
+                       💼
+                    </div>
+                    <div>
+                       <CardTitle className="text-2xl">Job Applicants</CardTitle>
                          {selectedJobId && <CardDescription>Students who have officially applied</CardDescription>}
                       </div>
                     </div>
@@ -279,6 +275,7 @@ export default function RecruiterDashboard() {
                   </div>
                 </Card>
               </TabsContent>
+
             </Tabs>
           </div>
           

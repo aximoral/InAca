@@ -50,6 +50,9 @@ class Profile(Base):
     bio = Column(Text, nullable=True)
     organization_name = Column(String, nullable=True)
     resume_url = Column(String, nullable=True)
+    github_url = Column(String, nullable=True)
+    linkedin_url = Column(String, nullable=True)
+    resume_path = Column(String, nullable=True)
     embedding = Column(Vector(384), nullable=True)
 
     user = relationship("User", back_populates="profile")

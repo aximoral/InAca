@@ -41,6 +41,9 @@ export default function OnboardingWizard() {
   // File Upload State
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [githubUrl, setGithubUrl] = useState("");
+  const [linkedinUrl, setLinkedinUrl] = useState("");
 
   // Submission State
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -120,9 +123,21 @@ export default function OnboardingWizard() {
           first_name: firstName,
           last_name: lastName,
           bio: headline || "Passionate about making an impact.",
-          skills: finalSkills
+          skills: finalSkills,
+          github_url: githubUrl,
+          linkedin_url: linkedinUrl
         })
       });
+
+      // Upload Resume if exists
+      if (response.ok && resumeFile) {
+        const formData = new FormData();
+        formData.append("file", resumeFile);
+        await fetch(`http://localhost:8000/api/profiles/${userId}/resume`, {
+          method: 'POST',
+          body: formData
+        });
+      }
 
       if (response.ok) {
         router.push("/student");
@@ -149,13 +164,13 @@ export default function OnboardingWizard() {
         </span>
         <div className="flex flex-wrap gap-4 justify-center w-full">
           <Button variant="outline" size="sm" onClick={() => handleAutoFill('fullstack')} className="text-xs border-dashed text-neu-muted hover:text-neu-fg">
-            ⚡ Auto-Fill: Full Stack
+            âš¡ Auto-Fill: Full Stack
           </Button>
           <Button variant="outline" size="sm" onClick={() => handleAutoFill('ai')} className="text-xs border-dashed text-neu-muted hover:text-neu-fg">
-            ⚡ Auto-Fill: AI Specialist
+            âš¡ Auto-Fill: AI Specialist
           </Button>
           <Button variant="outline" size="sm" onClick={() => handleAutoFill('backend')} className="text-xs border-dashed text-neu-muted hover:text-neu-fg">
-            ⚡ Auto-Fill: Backend Dev
+            âš¡ Auto-Fill: Backend Dev
           </Button>
         </div>
       </div>
@@ -197,7 +212,7 @@ export default function OnboardingWizard() {
               <div className="flex flex-col md:flex-row gap-8 items-center">
                 <div className="w-32 h-32 rounded-full shadow-neu-inset-deep flex items-center justify-center shrink-0 bg-neu-bg cursor-pointer hover:shadow-neu-inset transition-all group">
                    <div className="w-12 h-12 rounded-full shadow-neu-extruded-small flex items-center justify-center text-neu-muted group-hover:text-neu-accent transition-colors">
-                     📷
+                     ðŸ“·
                    </div>
                 </div>
                 <div className="w-full space-y-4">
@@ -242,6 +257,16 @@ export default function OnboardingWizard() {
           {step === 2 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
               <div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <label className="block text-sm font-bold text-neu-fg mb-2 ml-2">GitHub URL</label>
+                    <input type="text" value={githubUrl} onChange={(e) => setGithubUrl(e.target.value)} placeholder="https://github.com/..." className={inputStyle} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-neu-fg mb-2 ml-2">LinkedIn URL</label>
+                    <input type="text" value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)} placeholder="https://linkedin.com/in/..." className={inputStyle} />
+                  </div>
+                </div>
                 <label className="block text-sm font-bold text-neu-fg mb-2 ml-2">Resume Upload (PDF/Docx)</label>
                 
                 {/* Hidden File Input */}
@@ -259,7 +284,7 @@ export default function OnboardingWizard() {
                   className="w-full border-2 border-dashed border-transparent shadow-neu-inset-deep bg-neu-bg rounded-3xl p-10 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-200/20 transition-colors"
                 >
                   <div className="w-16 h-16 rounded-full shadow-neu-extruded bg-neu-bg flex items-center justify-center mb-4 text-2xl">
-                    {fileName ? "✅" : "📄"}
+                    {fileName ? "âœ…" : "ðŸ“„"}
                   </div>
                   <p className="font-bold text-neu-fg">
                     {fileName ? fileName : "Click to attach your resume"}
@@ -276,7 +301,7 @@ export default function OnboardingWizard() {
                   <div className="flex flex-wrap gap-2">
                     {skills.map(skill => (
                       <Badge key={skill} variant="default" className="flex items-center gap-2 py-2 px-4 cursor-pointer group hover:bg-red-50 hover:text-red-600 hover:shadow-neu-inset-small" onClick={() => removeSkill(skill)}>
-                        {skill} <span className="opacity-50 group-hover:opacity-100 font-bold">×</span>
+                        {skill} <span className="opacity-50 group-hover:opacity-100 font-bold">Ã—</span>
                       </Badge>
                     ))}
                   </div>
@@ -349,10 +374,10 @@ export default function OnboardingWizard() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
-                  { id: 'job', icon: '💼', title: 'Find a Job', desc: 'Looking for full-time or internships.' },
-                  { id: 'network', icon: '🤝', title: 'Networking', desc: 'Connect with industry professionals.' },
-                  { id: 'mentor', icon: '🧠', title: 'Find a Mentor', desc: 'Looking for guidance and advice.' },
-                  { id: 'hire', icon: '🏢', title: 'Hiring', desc: 'Looking for talent for my company.' }
+                  { id: 'job', icon: 'ðŸ’¼', title: 'Find a Job', desc: 'Looking for full-time or internships.' },
+                  { id: 'network', icon: 'ðŸ¤', title: 'Networking', desc: 'Connect with industry professionals.' },
+                  { id: 'mentor', icon: 'ðŸ§ ', title: 'Find a Mentor', desc: 'Looking for guidance and advice.' },
+                  { id: 'hire', icon: 'ðŸ¢', title: 'Hiring', desc: 'Looking for talent for my company.' }
                 ].map((opt) => (
                   <div 
                     key={opt.id}
@@ -385,11 +410,11 @@ export default function OnboardingWizard() {
             onClick={() => setStep(s => Math.max(1, s - 1))}
             disabled={step === 1 || isSubmitting}
           >
-            ← ← Back</Button>
+            â† â† Back</Button>
           
           {step < totalSteps ? (
             <Button onClick={() => setStep(s => Math.min(totalSteps, s + 1))}>
-              Continue →
+              Continue â†’
             </Button>
           ) : (
             <Button 
@@ -397,11 +422,11 @@ export default function OnboardingWizard() {
               disabled={isSubmitting || !userId}
               className="bg-neu-success shadow-neu-extruded hover:shadow-neu-hover hover:-translate-y-1 text-white disabled:opacity-50"
             >
-              {isSubmitting ? "Saving..." : "Complete Profile ✨</Button>
+              {isSubmitting ? "Saving..." : "Complete Profile ✨"}
+            </Button>
           )}
         </div>
       </Card>
-      
     </div>
   );
 }
